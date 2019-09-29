@@ -1997,6 +1997,8 @@ amsh_mq_send_inner(psm2_mq_t mq, psm2_mq_req_t req, psm2_epaddr_t epaddr,
 		   uint32_t flags_user, uint32_t flags_internal, psm2_mq_tag_t *tag,
 		   const void *ubuf, uint32_t len))
 {
+	if (len > 1000)
+		psm2_tt_record1("amsh_mq_send_inner invoked, len %u", len);
 	psm2_amarg_t args[3];
 	psm2_error_t err = PSM2_OK;
 	int is_blocking = (req == NULL);
@@ -2106,6 +2108,8 @@ do_rendezvous:
 	mq->stats.tx_eager_num++;
 	mq->stats.tx_eager_bytes += len;
 
+	if (len > 1000)
+		psm2_tt_record2("amsh_mq_send_inner done, len %u, status %u", len, err);
 	return err;
 }
 

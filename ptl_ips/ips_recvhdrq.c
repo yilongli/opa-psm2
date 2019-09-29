@@ -425,6 +425,8 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 		_HFI_VDBG
 		    ("new packet: rcv_hdr %p, rhf %" PRIx64 "\n",
 		     rcv_ev.p_hdr, rcv_ev.psm_hal_rhf.raw_rhf);
+		if (ips_recvhdrq_event_paylen(&rcv_ev) > 1000)
+			psm2_tt_record1("ips_recvhdrq_progress: get_receive_event returned, len %u", ips_recvhdrq_event_paylen(&rcv_ev));
 
 		/* If the hdrq_head is before cachedlastscan, that means that we have
 		 * already prescanned this for BECNs and FECNs, so we should not check

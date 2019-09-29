@@ -672,6 +672,8 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 #endif
 			)
 {
+	if (length > 1000)
+		psm2_tt_record1("ips_spio_transfer_frame invoked, len %u", length);
 	struct ips_spio *ctrl = proto->spioc;
 	volatile struct ips_spio_ctrl *spio_ctrl = ctrl->spio_ctrl;
 	volatile uint64_t *pioaddr;
@@ -919,6 +921,5 @@ fi_busy:
 		spio_ctrl->spio_write_in_progress--;
 		pthread_spin_unlock(&spio_ctrl->spio_ctrl_lock);
 	}
-
 	return err;
 }				/* ips_spio_transfer_frame() */

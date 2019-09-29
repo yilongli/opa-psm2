@@ -1419,6 +1419,7 @@ ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 	if_pf((flow->credits <= 0) || (flow->flags & IPS_FLOW_FLAG_CONGESTED)) {
 		if (nflushed)
 			*nflushed = 0;
+		psm2_tt_record0("ips_proto_flow_flush_pio: out of credits; abort");
 		return PSM2_EP_NO_RESOURCES;
 	}
 
@@ -1454,6 +1455,8 @@ ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 					   scb->abs_timeout);
 			num_sent++;
 			flow->credits--;
+			if (scb->payload_size > 1000)
+				psm2_tt_record2("ips_proto_flow_flush_pio: packet sent, len %u, num_sent %u", scb->payload_size, num_sent);
 			SLIST_REMOVE_HEAD(scb_pend, next);
 #ifdef PSM_DEBUG
 			flow->scb_num_pending--;
@@ -1466,6 +1469,8 @@ ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 			   PMU to stop a stop watch to measure instruction cycles of the
 			   TX speedpath of PSM.  The stop watch was started above. */
 			GENERIC_PERF_END(PSM_TX_SPEEDPATH_CTR);
+			if (scb->payload_size > 1000)
+				psm2_tt_record2("ips_proto_flow_flush_pio: pio failed, len %u, status %u", scb->payload_size, err);
 			break;
 		}
 	}
@@ -1475,6 +1480,7 @@ ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 		proto->stats.pio_busy_cnt++;
 		psmi_timer_request(proto->timerq, flow->timer_send,
 				   get_cycles() + proto->timeout_send);
+		psm2_tt_record1("ips_proto_flow_flush_pio: reschedule send timer, %u cyc later", proto->timeout_send);
 	}
 
 	if (nflushed != NULL)

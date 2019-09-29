@@ -252,6 +252,13 @@ extern "C" {
  * to be thread safe or reentrant.
  */
 
+// Time trace record functions defined in RAMCloud::OfiUdDriver.
+void psm2_tt_record0(const char* fmt);
+void psm2_tt_record1(const char* fmt, uint32_t arg0);
+void psm2_tt_record2(const char* fmt, uint32_t arg0, uint32_t arg1);
+void psm2_tt_record3(const char* fmt, uint32_t arg0, uint32_t arg1, uint32_t arg2);
+void psm2_tt_record4(const char* fmt, uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+
 /** @brief Local endpoint handle (opaque)
  *  @ingroup ep
  *
