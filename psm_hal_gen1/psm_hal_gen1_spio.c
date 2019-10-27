@@ -477,11 +477,13 @@ spio_credit_return_update(struct ips_spio *ctrl)
 			SPIO_CREDITS_Counter(ctrl->spio_ctrl->spio_credits.
 					    value)) & 0x7FF)) <=
 			ctrl->spio_total_blocks);
+		uint32_t old_avail = ctrl->spio_ctrl->spio_available_blocks;
 		ctrl->spio_ctrl->spio_available_blocks =
 			ctrl->spio_total_blocks -
 			((ctrl->spio_ctrl->spio_fill_counter -
 			SPIO_CREDITS_Counter(ctrl->spio_ctrl->spio_credits.
 					   value)) & 0x7FF);
+		psm2_tt_record2("spio_credit_return_update: new credits updated, %u => %u", old_avail, ctrl->spio_ctrl->spio_available_blocks);
 
 		/* a successful credit update, clear reset count */
 		ctrl->spio_ctrl->spio_reset_count = 0;
@@ -672,8 +674,10 @@ ips_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *flow,
 #endif
 			)
 {
-	if (length > 1000)
-		psm2_tt_record1("ips_spio_transfer_frame invoked, len %u", length);
+	if (length)
+		psm2_tt_record1("ips_spio_transfer_frame: sending packet w. PIO, len %u", length);
+	else
+		psm2_tt_record0("ips_spio_transfer_frame: sending ACK");
 	struct ips_spio *ctrl = proto->spioc;
 	volatile struct ips_spio_ctrl *spio_ctrl = ctrl->spio_ctrl;
 	volatile uint64_t *pioaddr;
@@ -759,6 +763,7 @@ fi_busy:
 		  SPIO_CREDITS_DueToErr(spio_ctrl->spio_credits.value),
 		  SPIO_CREDITS_DueToForce(spio_ctrl->spio_credits.value),
 		  *ctrl->spio_credits_addr);
+//	psm2_tt_record3("ips_spio_transfer_frame: total credits %u, avail %u, nblks %u", ctrl->spio_total_blocks, spio_ctrl->spio_available_blocks, nblks);
 
 	/*
 	 * Save the assigned locally, update the shared for other processes.

@@ -551,6 +551,7 @@ ips_proto_process_packet(const struct ips_recvhdrq_event *rcv_ev))
 	if (index >= (OPCODE_FUTURE_FROM - OPCODE_RESERVED))
 		index = 0;
 
+	psm2_tt_record1("ips_proto_process_packet: dispatching packet to service routine %u", index);
 	return ips_packet_service_routine[index]
 			((struct ips_recvhdrq_event *)rcv_ev);
 }

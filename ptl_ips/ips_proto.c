@@ -1406,6 +1406,7 @@ MOCK_DEF_EPILOGUE(ips_proto_flow_enqueue);
 psm2_error_t
 ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 {
+	psm2_tt_record0("ips_proto_flow_flush_pio: flushing pending packets");
 	struct ips_proto *proto = ((psm2_epaddr_t) (flow->ipsaddr))->proto;
 	struct ips_scb_pendlist *scb_pend = &flow->scb_pend;
 	int num_sent = 0;
@@ -1455,7 +1456,7 @@ ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 					   scb->abs_timeout);
 			num_sent++;
 			flow->credits--;
-			if (scb->payload_size > 1000)
+//			if (scb->payload_size > 1000)
 				psm2_tt_record2("ips_proto_flow_flush_pio: packet sent, len %u, num_sent %u", scb->payload_size, num_sent);
 			SLIST_REMOVE_HEAD(scb_pend, next);
 #ifdef PSM_DEBUG
@@ -1469,7 +1470,7 @@ ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed)
 			   PMU to stop a stop watch to measure instruction cycles of the
 			   TX speedpath of PSM.  The stop watch was started above. */
 			GENERIC_PERF_END(PSM_TX_SPEEDPATH_CTR);
-			if (scb->payload_size > 1000)
+//			if (scb->payload_size > 1000)
 				psm2_tt_record2("ips_proto_flow_flush_pio: pio failed, len %u, status %u", scb->payload_size, err);
 			break;
 		}
@@ -2251,6 +2252,8 @@ ips_proto_dma_wait_until(struct ips_proto *proto, ips_scb_t *scb)
 
 	PSMI_PROFILE_BLOCK();
 
+	uint32_t dma_cmpl_update_count = 0;
+	uint32_t yield_count = 0;
 	do {
 		if (spin_cnt++ == proto->ep->yield_spin_cnt) {
 			/* Have to yield holding the PSM lock, mostly because we don't
@@ -2260,16 +2263,19 @@ ips_proto_dma_wait_until(struct ips_proto *proto, ips_scb_t *scb)
 			did_yield = 1;
 			spin_cnt = 0;
 			sched_yield();
+			yield_count++;
 		}
 
 		err = ips_proto_dma_completion_update(proto);
+		dma_cmpl_update_count++;
 		if (err)
 			return err;
 	} while (scb->dma_complete == 0);
 
 	if (did_yield)
 		proto->stats.writev_compl_delay++;
-
+	if (did_yield)
+		psm2_tt_record2("ips_proto_dma_wait_until: dma completion update count %u, yield_count %u", dma_cmpl_update_count, yield_count);
 	PSMI_PROFILE_UNBLOCK();
 
 	return err;

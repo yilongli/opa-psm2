@@ -1,2 +1,5 @@
 updateRemote
 rsync*
+CMakeLists.txt
+cmake*
+.idea

@@ -593,9 +593,11 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 
 	/* For tidflow, psn_gen matches. So for all flows, tid/pio/dma,
 	 * we can used general psn_num to compare the PSN. */
+	uint32_t loop_count = 0;
 	while (between((scb = STAILQ_FIRST(unackedq))->seq_num.psn_num,
 		       last_seq_num.psn_num, ack_seq_num.psn_num)
 	    ) {
+		loop_count++;
 
 		/* take it out of the xmit queue and ..  */
 		if (scb == SLIST_FIRST(scb_pend)) {
@@ -637,6 +639,7 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 			flow->credits = flow->cwin = proto->flow_credits;
 			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
 			flow->flags &= ~IPS_FLOW_FLAG_CONGESTED;
+//			psm2_tt_record1("ips_proto_process_ack: all frames acked, iter %u", loop_count);
 			goto ret;
 		} else if (flow->timer_ack == scb->timer_ack) {
 			/*
@@ -662,6 +665,7 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 			last->timer_send->context = last;
 		}
 	}
+//	psm2_tt_record1("ips_proto_process_ack: exited while loop after %u iterations", loop_count);
 
 	psmi_assert(!STAILQ_EMPTY(unackedq));	/* sanity for above loop */
 
@@ -687,6 +691,7 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
 		}
 	}
+//	psm2_tt_record0("ips_proto_process_ack: CCA-related work done");
 
 	/* Reclaimed some credits - attempt to flush flow */
 	if (!SLIST_EMPTY(scb_pend))
@@ -699,6 +704,7 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 	 */
 	if (STAILQ_FIRST(unackedq)->abs_timeout == TIMEOUT_INFINITE)
 		psmi_timer_cancel(proto->timerq, flow->timer_ack);
+//	psm2_tt_record0("ips_proto_process_ack: end of real work");
 
 ret:
 	return IPS_RECVHDRQ_CONTINUE;

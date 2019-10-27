@@ -244,6 +244,7 @@ psm2_error_t
 ips_mq_send_envelope(struct ips_proto *proto, struct ips_flow *flow,
 		     struct ips_scb *scb, int do_flush))
 {
+//	psm2_tt_record1("ips_mq_send_envelope: invoked, do flush %d", do_flush);
 	psm2_error_t err = PSM2_OK;
 
 	ips_proto_flow_enqueue(flow, scb);
@@ -679,6 +680,7 @@ ips_proto_mq_isend(psm2_mq_t mq, psm2_epaddr_t mepaddr, uint32_t flags_user,
 		   uint32_t flags_internal, psm2_mq_tag_t *tag, const void *ubuf,
 		   uint32_t len, void *context, psm2_mq_req_t *req_o)
 {
+//	psm2_tt_record1("ips_proto_mq_isend: invoked, len %u", len);
 	psm2_error_t err = PSM2_OK;
 	ips_epaddr_flow_t flow_type;
 	struct ips_proto *proto;
@@ -874,6 +876,7 @@ psm2_error_t
 ips_proto_mq_send(psm2_mq_t mq, psm2_epaddr_t mepaddr, uint32_t flags,
 		  psm2_mq_tag_t *tag, const void *ubuf, uint32_t len)
 {
+//	psm2_tt_record1("ips_proto_mq_send: invoked, len %u", len);
 	psm2_error_t err = PSM2_OK;
 	ips_epaddr_flow_t flow_type;
 	struct ips_proto *proto;

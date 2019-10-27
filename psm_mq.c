@@ -660,6 +660,7 @@ __psm2_mq_isend2(psm2_mq_t mq, psm2_epaddr_t dest, uint32_t flags,
 		psm2_mq_tag_t *stag, const void *buf, uint32_t len,
 		void *context, psm2_mq_req_t *req)
 {
+//	psm2_tt_record1("__psm2_mq_isend2: invoked, len %u", len);
 	psm2_error_t err;
 
 	PSM2_LOG_MSG("entering");
@@ -688,6 +689,7 @@ psm2_error_t
 __psm2_mq_isend(psm2_mq_t mq, psm2_epaddr_t dest, uint32_t flags, uint64_t stag,
 	       const void *buf, uint32_t len, void *context, psm2_mq_req_t *req)
 {
+//	psm2_tt_record1("__psm2_mq_isend: invoked, len %u", len);
 	psm2_error_t err;
 	psm2_mq_tag_t tag;
 

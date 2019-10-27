@@ -425,8 +425,10 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 		_HFI_VDBG
 		    ("new packet: rcv_hdr %p, rhf %" PRIx64 "\n",
 		     rcv_ev.p_hdr, rcv_ev.psm_hal_rhf.raw_rhf);
-		if (ips_recvhdrq_event_paylen(&rcv_ev) > 1000)
-			psm2_tt_record1("ips_recvhdrq_progress: get_receive_event returned, len %u", ips_recvhdrq_event_paylen(&rcv_ev));
+		if (ips_recvhdrq_event_paylen(&rcv_ev))
+			psm2_tt_record1("ips_recvhdrq_progress: received packet, len %u", ips_recvhdrq_event_paylen(&rcv_ev));
+		else
+			psm2_tt_record0("ips_recvhdrq_progress: received ACK");
 
 		/* If the hdrq_head is before cachedlastscan, that means that we have
 		 * already prescanned this for BECNs and FECNs, so we should not check
@@ -481,6 +483,7 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 
 			ret = recvq->recvq_callbacks.callback_subcontext
 						(&rcv_ev, dest_subcontext);
+//			psm2_tt_record0("ips_recvhdrq_progress: not our subcontext; recvq_callback done");
 			if (ret == IPS_RECVHDRQ_REVISIT)
 			{
 				PSM2_LOG_MSG("leaving");
@@ -500,6 +503,7 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 			_update_error_stats(recvq->proto, psmi_hal_rhf_get_all_err_flags(rcv_ev.psm_hal_rhf));
 
 			recvq->recvq_callbacks.callback_error(&rcv_ev);
+//			psm2_tt_record0("ips_recvhdrq_progress: recvq_callback_error done");
 
 			if ((psmi_hal_rhf_get_rx_type(rcv_ev.psm_hal_rhf) != PSM_HAL_RHF_RX_TYPE_EAGER) ||
 			    (!(psmi_hal_rhf_get_all_err_flags(rcv_ev.psm_hal_rhf) & PSMI_HAL_RHF_ERR_TID)))
@@ -537,6 +541,7 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 						(htail + hdr_size - hhead);
 				}
 			}
+//			psm2_tt_record0("ips_recvhdrq_progress: no pending eager update");
 
 			/* Eager packet and tiderr.
 			 * Don't consider updating egr head, unless we're in
@@ -584,15 +589,18 @@ psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq)
 				  "PKT_STRM:");
 
 		/* Classify packet from a known or unknown endpoint */
+//		psm2_tt_record0("ips_recvhdrq_progress: about to classify packet");
 		epstaddr = ips_epstate_lookup(recvq->epstate,
 					       rcv_ev.p_hdr->connidx);
 		if_pf((epstaddr == NULL) || (epstaddr->ipsaddr == NULL)) {
 			rcv_ev.ipsaddr = NULL;
 			recvq->recvq_callbacks.
 			    callback_packet_unknown(&rcv_ev);
+//			psm2_tt_record0("ips_recvhdrq_progress: callback_packet_unknown done");
 		} else {
 			rcv_ev.ipsaddr = epstaddr->ipsaddr;
 			ret = ips_proto_process_packet(&rcv_ev);
+			psm2_tt_record0("ips_recvhdrq_progress: packet service routine returned");
 			if (ret == IPS_RECVHDRQ_REVISIT)
 			{
 				PSM2_LOG_MSG("leaving");
@@ -619,6 +627,7 @@ skip_packet:
 			/* a header entry is using an eager entry, stop tracing. */
 			state->hdr_countdown = 0;
 		}
+//		psm2_tt_record0("ips_recvhdrq_progress: skip_packet done");
 
 skip_packet_no_egr_update:
 		/* Note that state->hdrq_head is sampled speculatively by the code
@@ -635,6 +644,7 @@ skip_packet_no_egr_update:
 		num_hdrq_done++;
 		done = (!next_hdrq_is_ready() || (ret == IPS_RECVHDRQ_BREAK)
 			|| (num_hdrq_done == num_hdrq_todo));
+//		psm2_tt_record3("ips_recvhdrq_progress: updated done, num_hdrq_done %u, num_hdrq_todo %u, empty %d", num_hdrq_done, num_hdrq_todo, empty);
 
 		do_hdr_update = (state->head_update_interval ?
 				 (state->num_hdrq_done ==
@@ -647,6 +657,7 @@ skip_packet_no_egr_update:
 				 	rcv_ev.recvq->context->psm_hw_ctxt);
 			/* Reset header queue entries processed */
 			state->num_hdrq_done = 0;
+//			psm2_tt_record0("ips_recvhdrq_progress: do_hdr_update done");
 		}
 		if (state->num_egrq_done >= state->egrq_update_interval) {
 			/* Lazy update of egrq */
@@ -657,6 +668,7 @@ skip_packet_no_egr_update:
 				        recvq->context->psm_hw_ctxt);
 				state->rcv_egr_index_head = NO_EAGER_UPDATE;
 				state->num_egrq_done = 0;
+//				psm2_tt_record0("ips_recvhdrq_progress: lazy update of egrq done");
 			}
 		}
 		if (state->hdr_countdown > 0) {
@@ -694,6 +706,7 @@ skip_packet_no_egr_update:
 					_HFI_ERROR
 					    ("PSM BUG: EgrOverflow: eager queue is not full\n");
 			}
+//			psm2_tt_record0("ips_recvhdrq_progress: hdr_countdown > 0 done");
 		}
 	}
 	/* while (hdrq_entries_to_read) */
